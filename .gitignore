@@ -1,5 +1,5 @@
 Simulator/Project Backups
-Simulator/.workspace
+Simulator/*.workspace
 Code/*
 !Code/code.prj
 !Code/code.c
