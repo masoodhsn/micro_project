@@ -1,24 +1,41 @@
 #include <mega32.h>
 #include <delay.h>
 
-#define E PORTA.0
-#define RS PORTA.1
+#define E PORTC.4
+#define RS PORTC.5
 #define E_delay 1
 
 
 void send_command(char command){
-  RS=0;
-  PORTC=command;    
+  RS=0;    
+  PORTC=PORTC & 0xF0 | (( command & 0xF0 ) >> 4);  
+  E=0;
+  delay_ms(E_delay); 
+  E=1;                      
+  PORTC=PORTC & 0xF0 | (( command & 0x0F ));  
   E=0;
   delay_ms(E_delay); 
   E=1;
   RS=1; 
 }
 
-void lcd_init(void) {
+void char_out(char out){
+  PORTC=PORTC & 0xF0 | (( out & 0xF0 ) >> 4);  
+  E=0;
+  delay_ms(E_delay); 
+  E=1;                      
+  PORTC=PORTC & 0xF0 | (( out & 0x0F ));  
+  E=0;
+  delay_ms(E_delay); 
   E=1;
+}
+
+void lcd_init(void) {
+  E=1;     
+  send_command(0x33);
+  send_command(0x32);
+  send_command(0x28);
   send_command(0x0E);
-  send_command(0x38);
 }
 
 void clear_display(){
@@ -27,13 +44,6 @@ void clear_display(){
 
 void display_shift(){
     send_command(0x18);
-}
-
-void char_out(char out){
-   PORTC=out;
-   E=0;
-   delay_ms(E_delay);
-   E=1;
 }
 
 void iter(unsigned char it){
@@ -71,17 +81,16 @@ void main(void)
 {
 
   DDRC=0xFF;
-  DDRA=0xFF;   
   //init LCD
-  lcd_init();   
-       
+  lcd_init();              
+     
   menu(0);
   
                                                        
 
   while(1){
-    display_shift();
-    delay_ms(25);
+   display_shift();
+   delay_ms(25);
   }    
   
 }
