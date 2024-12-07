@@ -36,12 +36,22 @@ void clear_display(){
   send_command(0x01);
 }
 
-void display_shift(){
-    send_command(0x18);
-}
-
 void iter(unsigned char it){
   send_command(it);
+}
+
+
+////////////////////////////////////////// must be recode
+char x=0;
+void display_shift(){
+x+=1;
+  if(x>6 && x<=30){  
+   send_command(0x18); 
+    }  
+  if (x == 36){
+    x=0;     
+    send_command(0x02);
+    }   
 }
 
 void print(char* out, unsigned char it){
@@ -64,6 +74,9 @@ clear_display();
  switch (page){
   case 0: 
   print("1)Initialization 3)Presents    5)USART\n2)Search         4)Temperature 6)Traffic",0x00); 
+  break;
+  case 1:
+  print("Attendance Initialization",0x00);
   break;
 
  default: menu(0);
@@ -88,31 +101,54 @@ char row(char col){
       return out;
 }
 
-char key(){
-  if ( (PINA & 0x07) == 0x07  ) return  0x00 ; 
+char key_press(){
+  if ((PINA & 0x07) == 0x07  ) return  0x00 ; 
   if ((PINA & 0x07) == 0x03  )   return 0x01 | row(0x03);
   if ((PINA & 0x07) == 0x05  )   return 0x02 | row(0x05 );
   if ((PINA & 0x07) == 0x06  )   return 0x03 | row(0x06);
 }
 
+char pressed =0;
+char key(){
+  if( pressed ==0) 
+  {      
+    pressed=key_press();
+    if (pressed>0x00 &&  pressed < 0xD1){    
+        pressed=((pressed>>4)-0b1010)*3 + (pressed & 0x0F);   
+       return pressed;
+    }     
+    return pressed;       
+   } 
+   pressed=key_press(); 
+   return 0;  
+}
+
+//////////////////////// must be recode
+void display(char go){
+  char page=0;
+  if(page == 0 && go ==1){
+    page=1;
+    menu(1);
+  }
+}
 
 void main(void)
-{
-
+{                                                    
   DDRC=0xFF;    
-  DDRA=0xF8;
+  DDRA=0xF8;   
   //init LCD
   lcd_init();              
   //init key pad
-  PORTA=0x07;
+  PORTA=0x07;   
+  
      
   menu(0);
                                            
 
-  while(1){
-   display_shift();
-   delay_ms(25);   
-   key();
+  while(1){                          
+      char pressed=key();
+
+    //display(key());
   }    
   
 }
