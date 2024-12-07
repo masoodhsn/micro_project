@@ -4,6 +4,11 @@
 #define E PORTC.4
 #define RS PORTC.5
 
+int time =0;
+char page=0;
+char x=0;
+char cursor=0x00;
+
 
 void send_lcd( char bits){
   PORTC=PORTC & 0xF0 | bits;  
@@ -41,8 +46,6 @@ void iter(unsigned char it){
 }
 
 
-////////////////////////////////////////// must be recode
-char x=0;
 void display_shift(){
 x+=1;
   if(x>6 && x<=30){  
@@ -55,16 +58,19 @@ x+=1;
 }
 
 void print(char* out, unsigned char it){
-  it=it+0x80;  
+  it=it+0x80;
+  cursor=it-0x80;  
   iter(it);
   while(*out){       
   if(*out==0x0A){  
       it =it+0x40; 
       iter(it);        
       *out++;
+      cursor=it-0x80;
   }
   else{
       char_out(*out++);
+      cursor++;
     }
   }
 }
@@ -76,7 +82,10 @@ clear_display();
   print("1)Initialization 3)Presents    5)USART\n2)Search         4)Temperature 6)Traffic",0x00); 
   break;
   case 1:
-  print("Attendance Initialization",0x00);
+  print("Attendance\nInitialization",0x00);
+  break;         
+  case 2: 
+  print("Enter:# , Exit:*\n",0x00);
   break;
 
  default: menu(0);
@@ -123,13 +132,45 @@ char key(){
    return 0;  
 }
 
-//////////////////////// must be recode
+void go_menu(){
+    time =0;
+    page =0;
+    x=0;
+    menu(0);
+}
+
 void display(char go){
-  char page=0;
-  if(page == 0 && go ==1){
+  time=time+1;  
+   if (page==0 && time==25 ){
+    display_shift();
+    time=0;
+  }       
+  else if (page ==11 && time == 100 ){
     page=1;
-    menu(1);
+    menu(2);
+    time=0;
   }
+  if(page == 0 && go ==1){
+    time =0;
+    page=11;
+    menu(1); 
+  }
+  else if(page == 11 && go != 0){
+    page =1;
+    menu(2);
+  } 
+  else if(page ==1 && go == 0xD1){
+   go_menu();
+  }           
+  else if(page ==1 && go!=0xD1 && go!= 0xD3 && go != 0x00){        
+    if(go == 0xD2) print("0",cursor);  
+    else{
+       char num=go+0x30;       
+      char *p=&num;
+      *(p+1)=0x00;
+      print(p,cursor); 
+     }
+  } 
 }
 
 void main(void)
@@ -145,10 +186,9 @@ void main(void)
   menu(0);
                                            
 
-  while(1){                          
-      char pressed=key();
-
-    //display(key());
+  while(1){     
+      delay_ms(1);                    
+      display(key());
   }    
   
 }
