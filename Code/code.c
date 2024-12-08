@@ -3,11 +3,15 @@
 
 #define E PORTC.4
 #define RS PORTC.5
+#define student_num 30             /////////  maximum can be 99
 
 int time =0;
 char page=0;
 char x=0;
 char cursor=0x00;
+char code[9];                          /////////// one more to separate arrays
+char student[student_num*8];
+
 
 
 void send_lcd( char bits){
@@ -81,11 +85,19 @@ clear_display();
   case 0: 
   print("1)Initialization 3)Presents    5)USART\n2)Search         4)Temperature 6)Traffic",0x00); 
   break;
-  case 1:
+  case 11:
   print("Attendance\nInitialization",0x00);
   break;         
-  case 2: 
-  print("Enter:# , Exit:*\n",0x00);
+  case 1:  
+    print("Exit:* ,Delete:#\n",0x00);
+    print(code,cursor);
+  break;
+  case 12: 
+  print("Enter:*,Delete:#\n",0x00);  
+  print(code,cursor);
+  break;
+  case 31: 
+  print("Present Students\nExit:* Number:",0x00);      
   break;
 
  default: menu(0);
@@ -132,12 +144,25 @@ char key(){
    return 0;  
 }
 
+
+
 void go_menu(){
     time =0;
     page =0;
     x=0;
     menu(0);
 }
+
+
+unsigned int text_size(char * in){
+  unsigned int out=0x00;  
+  char *temp=in; 
+  while(*temp++) {   
+    out ++;
+    }             
+    return out;  
+}
+
 
 void display(char go){
   time=time+1;  
@@ -147,36 +172,98 @@ void display(char go){
   }       
   else if (page ==11 && time == 100 ){
     page=1;
-    menu(2);
+    menu(1);
     time=0;
   }
+  else if (page ==31 && time == 200){
+    page =3;
+    print("all right",0x00);
+    time=0;
+  }
+  
+  
   if(page == 0 && go ==1){
     time =0;
     page=11;
-    menu(1); 
+    menu(11); 
   }
   else if(page == 11 && go != 0){
     page =1;
-    menu(2);
+    menu(1);
   } 
-  else if(page ==1 && go == 0xD1){
-   go_menu();
-  }           
-  else if(page ==1 && go!=0xD1 && go!= 0xD3 && go != 0x00){        
-    if(go == 0xD2) print("0",cursor);  
+  else if(page ==1 && go == 0xD1){                    
+    char i=0x00; 
+    for(;i<0x08;i++) code[i]=0x00;
+   go_menu();     
+  }    
+  
+  else if (page==12 && go == 0xD1){ 
+    unsigned int temp=text_size(student);   
+    char i=0x00; 
+    for(;i<0x08;i++){
+      student[i+temp]=code[i];
+     code[i]=0x00;
+     } 
+    menu(1);
+    page=1;
+  }
+  
+  else if((page ==1 || page == 12) && go == 0xD3){
+   if (text_size(code))
+     code[text_size(code)-0x01]=0x00;
+      menu(1);
+      page =1;
+  } 
+   
+  else if((page ==1 || page==12) && go!=0xD1 && go!= 0xD3 && go != 0x00){   
+    if (text_size(code) == 0x08){
+      print("Error",cursor+2);    
+      PORTC.6=1;
+      delay_ms(25);
+      PORTC.6=0;
+      return ;
+    }   
+    if(go == 0xD2){  
+     print("0",cursor);
+     code[text_size(code)]=0x30;  
+     }  
+     
     else{
-       char num=go+0x30;       
-      char *p=&num;
-      *(p+1)=0x00;
-      print(p,cursor); 
+       char num=go+0x30;     
+       char *p=&num;      
+       *(p+1)=0x00;
+       print(p,cursor);  
+       code[text_size(code)]=num;  
+     }    
+     if (text_size(code) == 0x08){
+      menu(12);
+      page=12;    
      }
+  }
+    
+  
+
+  else if (page == 0 && go == 0x03){  
+    char number=text_size(student)/8+0x30;     ///////////bug  2 number 
+    *((&number)+1)=0x00;                 
+    PORTD=number;
+    time =0;
+    page=31;
+    menu(31);   
+    print(&number,cursor);
   } 
+   
+  else if ((page == 31 || page ==3) && go== 0xD1){
+    go_menu();
+  }
+   
 }
 
 void main(void)
 {                                                    
   DDRC=0xFF;    
-  DDRA=0xF8;   
+  DDRA=0xF8;  
+  DDRD=0xFF; 
   //init LCD
   lcd_init();              
   //init key pad
