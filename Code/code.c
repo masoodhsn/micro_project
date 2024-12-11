@@ -5,12 +5,12 @@
 #define RS PORTC.5
 #define student_num 30             /////////  maximum can be 99
 
-int time =0;
+unsigned int time =0;
 char page=0;
-char x=0;
 char cursor=0x00;
 char code[9];                          /////////// one more to separate arrays
-char student[student_num*8];
+char student[student_num*8+1];
+char show[6*12 +1];           ///// one more to save \n
 
 
 
@@ -50,15 +50,14 @@ void iter(unsigned char it){
 }
 
 
-void display_shift(){
-x+=1;
+void display_shift(int x){
   if(x>6 && x<=30){  
    send_command(0x18); 
     }  
   if (x == 36){
     x=0;     
-    send_command(0x02);
-    }   
+    send_command(0x02);    
+    }           
 }
 
 void print(char* out, unsigned char it){
@@ -99,8 +98,11 @@ clear_display();
   case 31: 
   print("Present Students\nExit:* Number:",0x00);      
   break;
+  case 3:
+  print(show,0x00);
+  break;
 
- default: menu(0);
+ //default: menu(0);
  };
 }
 
@@ -149,8 +151,26 @@ char key(){
 void go_menu(){
     time =0;
     page =0;
-    x=0;
     menu(0);
+}
+
+
+void set_list(char p){
+  char i=p*6;             
+  for(;i<(p+1)*6;i++){
+    char j=0;  
+    char show_p= 12*(i-p*6); 
+    if(student[8*i]){
+    show[show_p]=i-(p*6)+0x31;
+    show[show_p+1]= ')';  
+    show[show_p+10]= ' ';
+    show[show_p+11]= ' ';     
+    }                 
+    for(;j<8;j++){   
+        show[j+show_p+2]=student[j+8*i];       
+    }                                           
+  }  
+  show[35]='\n';
 }
 
 
@@ -164,11 +184,10 @@ unsigned int text_size(char * in){
 }
 
 
-void display(char go){
-  time=time+1;  
-   if (page==0 && time==25 ){
-    display_shift();
-    time=0;
+void display(char go){ 
+   if (page==0 && time%25==0 ){
+    display_shift(time/25);  
+    if(time==900) time=0;
   }       
   else if (page ==11 && time == 100 ){
     page=1;
@@ -177,9 +196,20 @@ void display(char go){
   }
   else if (page ==31 && time == 200){
     page =3;
-    print("all right",0x00);
     time=0;
-  }
+    return;
+  }   
+  
+   else if( page==3 && time%25==0 && go == 0x00){   
+        char number=text_size(student)/8;   
+        if (time==((number-1)/6+1)*900) time=0;  
+        
+       if (time%900 ==0) {      
+          set_list(time/900 );
+          menu(3);
+        }          
+        display_shift((time%900)/25);       
+  }   
   
   
   if(page == 0 && go ==1){
@@ -244,9 +274,8 @@ void display(char go){
   
 
   else if (page == 0 && go == 0x03){  
-    char number=text_size(student)/8+0x30;     ///////////bug  2 number 
+    char number=text_size(student)/8+0x30;  
     *((&number)+1)=0x00;                 
-    PORTD=number;
     time =0;
     page=31;
     menu(31);   
@@ -256,14 +285,17 @@ void display(char go){
   else if ((page == 31 || page ==3) && go== 0xD1){
     go_menu();
   }
-   
+     
+
+  time=time+1; 
 }
 
 void main(void)
 {                                                    
   DDRC=0xFF;    
-  DDRA=0xF8;  
-  DDRD=0xFF; 
+  DDRA=0xF8;
+  DDRD=0xFF;  
+  PORTD=0xFF;
   //init LCD
   lcd_init();              
   //init key pad
