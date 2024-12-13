@@ -10,7 +10,7 @@ char page=0;
 char cursor=0x00;
 char code[9];                          /////////// one more to separate arrays
 char student[student_num*8+1];
-char show[6*12 +1];           ///// one more to save \n
+char show[6*13];
 
 
 
@@ -63,7 +63,7 @@ void display_shift(int x){
 void print(char* out, unsigned char it){
   it=it+0x80;
   cursor=it-0x80;  
-  iter(it);
+  iter(it);           
   while(*out){       
   if(*out==0x0A){  
       it =it+0x40; 
@@ -80,10 +80,10 @@ void print(char* out, unsigned char it){
 
 void menu(char page){
 clear_display();
-  PORTD=page;
- switch (page){
-  case 0:      
-  print("1)Initialization 3)Presents    5)USART\n2)Search         4)Temperature 6)Traffic",0x00);
+  print("",0x00); /////////////bug
+ switch (page){     
+  case 0:  
+  print("1)Initialization 3)Presents    5)USART\n2)Search         4)Temperature 6)Traffic",0x00);         
   break;
   case 11:
   print("Attendance\nInitialization",0x00);
@@ -170,21 +170,25 @@ void go_menu(){
 
 
 void set_list(char p){
-  char i=p*6;             
+    char i=p*6;    
+    char t=0x00;
+    for(;t<6*13;t++) show[t]=0x00;         
   for(;i<(p+1)*6;i++){
     char j=0;  
-    char show_p= 12*(i-p*6); 
-    if(student[8*i]){
-    show[show_p]=i-(p*6)+0x31;
-    show[show_p+1]= ')';  
-    show[show_p+10]= ' ';
-    show[show_p+11]= ' ';     
-    }                 
+    char show_p= 13*(i-p*6);  
+    if(student[8*i] == 0x00)  break;
+    show[show_p]=(i+1)/10+0x30;
+    show[show_p+1]=(i+1)%10+0x30;
+    show[show_p+2]= ')';  
+    show[show_p+11]= ' ';
+    show[show_p+12]= ' ';    
+                   
     for(;j<8;j++){   
-        show[j+show_p+2]=student[j+8*i];       
+       show[j+show_p+3]=student[j+8*i];       
     }                                           
   }  
-  show[35]='\n';
+  show[38]='\n';  
+  show[77]=0x00;
 }
 
 
@@ -397,8 +401,14 @@ void display(char go){
   
                                                         
   /////////////////////////////// click on page 3
-   
-  else if ((page == 31 || page ==3) && go== 0xD1){ 
+  
+  else if(page ==31 && go!= 0x00){
+     page =3;
+    time=0;
+    return;
+  }                                                                                 
+  
+  else if ( page ==3 && go== 0xD1){ 
     go_menu();
   }                                                                   
   //////////////////////////end click page 3
@@ -410,7 +420,7 @@ void main(void)
 {                                                    
   DDRC=0xFF;    
   DDRA=0xF8;
-  DDRD=0xFF;  
+  //DDRD=0xFF;  
   //init LCD
   lcd_init();              
   //init key pad
