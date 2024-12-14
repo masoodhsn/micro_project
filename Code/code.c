@@ -210,14 +210,14 @@ char check_student(){
   
   while(*it){  
      i=0;
-     for ( ;i<9;i++){
+     for ( ;i<8;i++){
         if(*(it+i) != code[i]) break;
-        if (code[i]==0x00){           
-          show[0]=number/10;
-          show[1]=number%10; 
+        show[i+3]=code[i];
+        if (i==7){           
+          show[0]=(number+1)/10+0x30;
+          show[1]=(number+1)%10+0x30; 
           return 0x01;
         }  
-        show[i+3]=code[i];
      }  
      number +=1;     
      it=student+number*8;
