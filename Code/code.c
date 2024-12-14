@@ -1,15 +1,20 @@
 #include <mega32.h>
 #include <delay.h>
+#include <eeprom.h>
 
 #define E PORTC.4
 #define RS PORTC.5
 #define student_num 30             /////////  maximum can be 99
 
+
+unsigned char EEMEM student[student_num*8];
+
+
 unsigned int time =0;
 char page=0;
 char cursor=0x00;
 char code[9];                          /////////// one more to separate arrays
-char student[student_num*8+1];
+//unsigned char student[student_num*8];
 char show[6*13];
 
 
@@ -176,7 +181,7 @@ void set_list(char p){
   for(;i<(p+1)*6;i++){
     char j=0;  
     char show_p= 13*(i-p*6);  
-    if(student[8*i] == 0x00)  break;
+    if(eeprom_read_byte(&(student)+8*i)!=0xFF)  break;
     show[show_p]=(i+1)/10+0x30;
     show[show_p+1]=(i+1)%10+0x30;
     show[show_p+2]= ')';  
@@ -184,7 +189,7 @@ void set_list(char p){
     show[show_p+12]= ' ';    
                    
     for(;j<8;j++){   
-       show[j+show_p+3]=student[j+8*i];       
+       show[j+show_p+3]=eeprom_read_byte(&(student)+8*i+j)!=0xFF;       
     }                                           
   }  
   show[38]='\n';  
@@ -192,17 +197,35 @@ void set_list(char p){
 }
 
 
-unsigned int text_size(char * in){
+char code_size(){
   unsigned int out=0x00;  
-  char *temp=in; 
+  char *temp=code; 
   while(*temp++) {   
     out ++;
     }             
     return out;  
 }
 
+unsigned int student_size(){
+  unsigned int i=0;
+   while(eeprom_read_byte(&(student)+i)!=0xFF)  i++;
+   
+   return i; 
+}
+
+
+char * give_student(char number){
+  char  out[8];    
+  char i=0;
+  for(;i<8;i++){
+    out[i]=eeprom_read_byte(&student+number*8+i);
+    if (out[i]==0xFF) out[i]=0x00;
+  }
+  return out;
+}
+
 char check_student(){
-  char*it=student;      
+  char*it=give_student(0);      
   char number=0 ;   
   char i=0; 
   show[11]=0x00;
@@ -220,7 +243,7 @@ char check_student(){
         }  
      }  
      number +=1;     
-     it=student+number*8;
+     it=give_student(number);
   }        
   return 0x00;    
 }
@@ -255,7 +278,7 @@ void display(char go){
     
     ///////// showing number in shift mode
    else if( page==3 && time%25==0 && go == 0x00){   
-        char number=text_size(student)/8;   
+        char number=student_size()/8;   
         if (time==((number-1)/6+1)*900) time=0;  
         
        if (time%900 ==0) {      
@@ -280,8 +303,8 @@ void display(char go){
   }                  
   
    else if (page == 0 && go == 0x03){  
-    char number=(text_size(student)/8)/10+0x30;   
-    *((&number)+1)=(text_size(student)/8)%10+0x30;
+    char number=(student_size()/8)/10+0x30;   
+    *((&number)+1)=(student_size()/8)%10+0x30;
     *((&number)+2)=0x00;                  
     time =0;
     page=31;
@@ -306,10 +329,10 @@ void display(char go){
   }    
   //// enter    1
   else if (page==12 && go == 0xD1){ 
-    unsigned int temp=text_size(student);   
+    unsigned int temp=student_size();   
     char i=0x00; 
-    for(;i<0x08;i++){
-      student[i+temp]=code[i];
+    for(;i<0x08;i++){  
+      eeprom_write_byte(&student+i+temp,code[i]);  
      code[i]=0x00;
      } 
     menu(1);
@@ -317,8 +340,8 @@ void display(char go){
   }
    //// Delete     1
   else if((page ==1 || page == 12) && go == 0xD3){
-   if (text_size(code))
-     code[text_size(code)-0x01]=0x00;
+   if (code_size())
+     code[code_size()-0x01]=0x00;
       menu(1);
       page =1;
   }        
@@ -350,8 +373,8 @@ void display(char go){
   }
    //// Delete   2
   else if((page ==2 || page == 22) && go == 0xD3){
-   if (text_size(code))
-     code[text_size(code)-0x01]=0x00;
+   if (code_size())
+     code[code_size()-0x01]=0x00;
       menu(2);
       page =2;
   } 
@@ -360,7 +383,7 @@ void display(char go){
   /// input numbers
   else if(((page ==1 || page==12) || (page ==2 || page==22)) && go!=0xD1 && go!= 0xD3 && go != 0x00){   
     /// buzzer error
-    if (text_size(code) == 0x08){
+    if (code_size() == 0x08){
       print("Error",cursor+2);    
       PORTC.6=1;
       delay_ms(25);
@@ -370,7 +393,7 @@ void display(char go){
     //number
     if(go == 0xD2){  
      print("0",cursor);
-     code[text_size(code)]=0x30;  
+     code[code_size()]=0x30;  
      }  
      
     else{
@@ -378,11 +401,11 @@ void display(char go){
        char *p=&num;      
        *(p+1)=0x00;
        print(p,cursor);  
-       code[text_size(code)]=num;  
+       code[code_size()]=num;  
      }     
     
       /// go to enter mode 
-     if (text_size(code) == 0x08){ 
+     if (code_size() == 0x08){ 
       if (page ==1){
       menu(12);
       page=12;  
@@ -417,15 +440,22 @@ void display(char go){
 }
 
 void main(void)
-{                                                    
+{  
+
+  //char i=0;                                            
   DDRC=0xFF;    
   DDRA=0xF8;
-  //DDRD=0xFF;  
+ // DDRD=0xFF;
   //init LCD
   lcd_init();              
   //init key pad
   PORTA=0x07;   
-  
+ /* for( ;i<16;i++) {
+  PORTD=eeprom_read_byte(&student + i);
+  delay_ms(200);
+  PORTD=0x00;
+  delay_ms(100);
+  }   */
      
   menu(0);
                                            
