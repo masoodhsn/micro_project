@@ -233,7 +233,7 @@ char check_student(){
   
   while(*it){  
      i=0;
-     for ( ;i<8;i++){
+     for ( ;i<8;i++){        
         if(*(it+i) != code[i]) break;
         show[i+3]=code[i];
         if (i==7){           
@@ -454,7 +454,7 @@ void main(void)
 {  
                                         
   DDRC=0xFF;    
-  DDRA=0xF8;   
+  DDRA=0xF8;                    ;
   //init LCD
   lcd_init();              
   //init key pad
