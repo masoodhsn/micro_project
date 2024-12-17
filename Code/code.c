@@ -180,8 +180,8 @@ void set_list(char p){
     for(;t<6*13;t++) show[t]=0x00;         
   for(;i<(p+1)*6;i++){
     char j=0;  
-    char show_p= 13*(i-p*6);  
-    if(eeprom_read_byte(&(student)+8*i)!=0xFF)  break;
+    char show_p= 13*(i-p*6);                   
+    if(eeprom_read_byte(&(student)+8*i)==0xFF)  break;
     show[show_p]=(i+1)/10+0x30;
     show[show_p+1]=(i+1)%10+0x30;
     show[show_p+2]= ')';  
@@ -189,8 +189,8 @@ void set_list(char p){
     show[show_p+12]= ' ';    
                    
     for(;j<8;j++){   
-       show[j+show_p+3]=eeprom_read_byte(&(student)+8*i+j)!=0xFF;       
-    }                                           
+       show[j+show_p+3]=eeprom_read_byte(&(student)+8*i+j);   
+    }                                                
   }  
   show[38]='\n';  
   show[77]=0x00;
@@ -243,7 +243,7 @@ char check_student(){
         }  
      }  
      number +=1;     
-     it=give_student(number);
+     it=give_student(number);   
   }        
   return 0x00;    
 }
@@ -270,7 +270,8 @@ void display(char go){
     time=0; 
   }
   
-  else if (page ==31 && time == 200){
+  else if (page ==31 && time == 200){         
+    
     page =3;
     time=0;
     return;
@@ -278,7 +279,7 @@ void display(char go){
     
     ///////// showing number in shift mode
    else if( page==3 && time%25==0 && go == 0x00){   
-        char number=student_size()/8;   
+        char number=student_size()/8;
         if (time==((number-1)/6+1)*900) time=0;  
         
        if (time%900 ==0) {      
@@ -439,24 +440,27 @@ void display(char go){
   time=time+1; 
 }
 
+void clear_ee(){
+  unsigned int i=0x00;
+  for(;i<0xFFFF;i++)       eeprom_write_byte(i,0xFF);
+}
+
+void show_ee(){
+ char i=0x00;
+ for(;i<0xFF;i++)  {delay_ms(200);  PORTD= eeprom_read_byte(&student+i);}
+}
+
 void main(void)
 {  
-
-  //char i=0;                                            
+                                        
   DDRC=0xFF;    
-  DDRA=0xF8;
- // DDRD=0xFF;
+  DDRA=0xF8;   
   //init LCD
   lcd_init();              
   //init key pad
   PORTA=0x07;   
- /* for( ;i<16;i++) {
-  PORTD=eeprom_read_byte(&student + i);
-  delay_ms(200);
-  PORTD=0x00;
-  delay_ms(100);
-  }   */
-     
+  //clear_ee();     
+  //show_ee();
   menu(0);
                                            
 
