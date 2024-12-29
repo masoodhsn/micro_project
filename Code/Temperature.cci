@@ -1,0 +1,5 @@
+VERSION:3 SOURCE_TIMESTAMP:599D3E0F
+NODE:I LEVEL:0 LINE:1 "E:\MicroProcessor\micro_project\Code\Masood\Temperature.h"
+NODE:F LEVEL:0 LINE:3 "ADC_init(void)"
+NODE:F LEVEL:0 LINE:12 "ADC_read(void)"
+NODE:F LEVEL:0 LINE:18 "calculate_temperature(unsigned int adc_value)"

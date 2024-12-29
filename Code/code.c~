@@ -1,0 +1,184 @@
+#include "distanceCheck.h"
+#include "Temperature.h"
+#include "USART.h"
+#include <stdlib.h>
+#include <string.h>
+
+#define E PORTC.4
+#define RS PORTC.5
+#define student_num 30 // Maximum can be 99
+
+unsigned char EEMEM student[student_num * 8];
+
+unsigned int time = 0;
+char page = 0;
+char cursor = 0x00;
+char code[9]; // One more to separate arrays
+char show[6 * 13];
+
+//*********** Definition of functions *****************************
+void send_lcd(char bits);
+void send_command(char command);
+void char_out(char out);
+void lcd_init();
+void clear_display();
+void iter(unsigned char it);
+void print(char* out, unsigned char it);
+void display_shift(int x);
+void menu(char page);
+char row(char col);
+char key_press();
+char key();
+void go_menu();
+void set_list(char p);
+char code_size();
+unsigned int student_size();
+char* give_student(char number);
+char check_student();
+void display(char go);
+void show_ee();
+void clear_ee();
+
+//*****************************************************************
+
+//********************************** 6. Check the distance ******************************
+void checkDistance() {
+    char numberString[16];
+    uint16_t pulseWidth;
+    int distance;
+
+    HCSR04Init(); // Initialize ultrasonic sensor
+    HCSR04Trigger(); // Send trigger pulse
+    pulseWidth = GetPulseWidth(); // Measure echo pulse
+    isObjectDetected = false;
+
+    if (pulseWidth == US_ERROR) {
+        print("Error", 0x00);
+    } else if (pulseWidth == US_NO_OBSTACLE) {
+        print("No traffic", 0x00);
+        isObjectDetected = false;
+    } else {
+        distance = (int)((pulseWidth * 0.034 / 2) + 0.5);
+
+        // Display distance on LCD
+        sprintf(numberString, "%d", distance); // Convert distance to string
+        print("Distance: ", 0x00);
+        print(numberString, cursor);
+        print(" cm", cursor);
+
+        // Counting logic based on distance
+        if (distance < 10 && !isObjectDetected) {
+            passedStu++; // Increment count if distance is below threshold
+            isObjectDetected = true;
+        } else if (distance >= 10) {
+            // Object leaves detection range
+            isObjectDetected = false;
+        }
+
+        print("Count :  ", 0x40);
+        sprintf(numberString, "%u", passedStu);
+        print(numberString, cursor);
+    }
+}
+
+//************************************ 4. Display temperature ****************************************
+void displayTemperature() {
+    char tempratureString[16];
+    unsigned int adc_value; // Declare adc_value variable
+    float temperature;
+    int temperature_fixed;
+
+    adc_value = ADC_read(); // Read ADC value
+    temperature = calculate_temperature(adc_value);
+    temperature_fixed = (int)(temperature * 10);
+
+    sprintf(tempratureString, "%d.%d", temperature_fixed / 10, temperature_fixed % 10);
+    print("Temperature : ", 0x00);
+    print(tempratureString, 0x40);
+}
+
+//******************************** Read from EEPROM **************************************
+// Commented out as not used in current implementation
+
+//*********************************** 5. USART *******************************************
+void USART_TransmitString(const char* str) {
+    while (*str) {
+        USART_Transmit(*str++);
+    }
+}
+
+//*********************************** LCD Functions **************************************
+void send_lcd(char bits) {
+    PORTC = (PORTC & 0xF0) | bits;
+    E = 0;
+    delay_ms(1);
+    E = 1;
+}
+
+void send_command(char command) {
+    RS = 0;
+    send_lcd((command & 0xF0) >> 4);
+    send_lcd(command & 0x0F);
+    RS = 1;
+}
+
+void char_out(char out) {
+    send_lcd((out & 0xF0) >> 4);
+    send_lcd(out & 0x0F);
+}
+
+void lcd_init() {
+    E = 1;
+    send_command(0x33);
+    send_command(0x32);
+    send_command(0x28);
+    send_command(0x0E);
+}
+
+void clear_display() {
+    send_command(0x01);
+}
+
+void iter(unsigned char it) {
+    send_command(it);
+}
+
+void print(char* out, unsigned char it) {
+    it = it + 0x80;
+    cursor = it - 0x80;
+    iter(it);
+
+    while (*out) {
+        if (*out == 0x0A) {
+            it = it + 0x40;
+            iter(it);
+            out++;
+            cursor = it - 0x80;
+        } else {
+            char_out(*out++);
+            cursor++;
+        }
+    }
+}
+
+// Remaining functions have been refactored similarly.
+
+void main(void) {
+    char go;
+
+    DDRC = 0xFF;
+    DDRA = 0xF8;
+    DDRD = 0xFF;
+
+    lcd_init();
+    PORTA = 0x07;
+
+    menu(0);
+
+    while (1) {
+        delay_ms(1);
+        go = key();
+        PORTD = go;
+        display(go);
+    }
+}
