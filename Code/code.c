@@ -63,11 +63,13 @@ void checkDistance(){
         } else {
             distance = (int)((pulseWidth * 0.034 / 2) + 0.5);
 
-            // Display distance on LCD
+             //Display distance on LCD
             sprintf(numberString, "%d", distance); // Convert distance to string
             print("Distance: ",0x00);
             print(numberString,cursor);
             print(" cm",cursor);
+
+
 
             // Counting logic based on distance
             if (distance < 10 && !isObjectDetected) {
@@ -848,7 +850,7 @@ void main(void)
    DDRD=0xff;
 
   while(1){
-      delay_ms(1);
+      delay_ms(10);
 
        go=key();
        PORTD=go;
