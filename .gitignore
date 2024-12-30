@@ -1,6 +1,9 @@
 Simulator/*
 !Simulator/micro_Project.pdsprj
 
-# نادیده گرفتن تمام فایل‌های Code/ را حذف کنید
-# Code/*
-!Code/*
+Code/*
+!Code/*.c
+!Code/*.h
+!Code/code.prj
+
+
