@@ -18,7 +18,7 @@ char cursor=0x00;
 char code[9];                          /////////// one more to separate arrays
 //unsigned char student[student_num*8];
 char show[6*13];
-
+//char studentList[student_num][9];
 
 //***********Definition of functions*****************************
 void send_lcd( char bits);
@@ -63,7 +63,7 @@ void checkDistance(){
         } else {
             distance = (int)((pulseWidth * 0.034 / 2) + 0.5);
 
-             Display distance on LCD
+             //Display distance on LCD
             sprintf(numberString, "%d", distance); // Convert distance to string
             print("Distance: ",0x00);
             print(numberString,cursor);
@@ -105,64 +105,75 @@ void displayTemperature(){
 
 
 
-//********************************Read from eeprom*************************
-//unsigned int read_students_from_eeprom(char student_list[][9]) {
-//    unsigned int i = 0, j = 0, student_count = 0;
+
+//************************************
+void USART_TransmitString(const char* str) {
+    while (*str) {
+        USART_Transmit(*str++);
+    }
+}
+
+
+
+
+
+
+
+
 //
-//    while (i < student_num * 8) { // Iterate through EEPROM space
-//        char is_valid = 0;
-//        for (j = 0; j < 8; j++) {
-//            // Read each byte of the student ID
-//            char byte = eeprom_read_byte(&(student[i + j]));
-//
-//            // Check if the byte is valid (not uninitialized)
-//            if (byte != 0xFF) {
-//                is_valid = 1; // Mark as valid
-//            }
-//            student_list[student_count][j] = byte == 0xFF ? '\0' : byte; // Store or null-terminate
+////***************************** Read from EEPROM********************************
+//void ReadFromEEPROM() {
+//    unsigned int count = 0;
+//    unsigned int letter = 0;
+//    for (; count < student_size(); count+=8) {
+//        for (; letter < 0x08; letter++) {
+//            studentList[count / 8][letter] = eeprom_read_byte(&(student)+letter + count);
 //        }
-//
-//        if (is_valid) {
-//            student_list[student_count][8] = '\0'; // Ensure null-termination
-//            student_count++; // Increment valid student count
-//        } else {
-//            break; // Stop reading if no valid data
-//        }
-//
-//        i += 8; // Move to the next student ID in EEPROM
-//    }
-//
-//    return student_count; // Return the number of valid students
-//}
-//
-//
-//
-////************************************
-//void USART_TransmitString(const char* str) {
-//    while (*str) {
-//        USART_Transmit(*str++);
+//        letter = 0;
 //    }
 //}
-//
-//
-////***********************************5. USART*************************************
-//void displayOnVTerminal(){
-//
-//    char student_info[student_num][9];
-//    unsigned int count;
-//    unsigned int i=0;
-//     USART_init(MYUBRR);
-////    count=read_students_from_eeprom(student_info);
-////    for( ;i<count;i++){
-////        USART_TransmitString(student_info[i]);
-////        USART_Transmit('\n');
-////
-////    }
-//    USART_Transmit('a');
-//
-//
-//
-//}
+
+
+
+
+//***********************************5. USART*************************************
+void displayOnVTerminal(){
+        unsigned int count=0;
+        unsigned int letter = 0;
+        char out[9];
+        char temp[9];
+     if(student_size()==0){
+        print("Empty list",0x00);
+        print("Exit : *",0x40);
+
+     }
+     else {
+     print("Successful",0x00);
+     print("Exit : *",0x40);
+
+     for (; count < student_size(); count += 8) {
+         for (; letter < 0x08; letter++) {
+             out[letter] = eeprom_read_byte(&(student)+letter + count);
+         }
+         out[0x08] = '\0';
+         strcpy(temp,out);
+         USART_TransmitString(temp);
+         USART_Transmit('\r');
+
+
+         letter = 0;
+
+     }
+     USART_TransmitString("------------------------------------\r");
+     }
+
+
+}
+
+
+
+
+
 
 
 
@@ -296,9 +307,10 @@ clear_display();
   case 4:
   displayTemperature();
   break;
-//  case 5:
-//  displayOnVTerminal();
-//  break;
+  case 5:
+  USART_init(MYUBRR);
+  displayOnVTerminal();
+  break;
 
 
  //default: menu(0);
@@ -357,6 +369,7 @@ void go_menu(){
 void set_list(char p){
     char i=p*6;
     char t=0x00;
+
     for(;t<6*13;t++) show[t]=0x00;
   for(;i<(p+1)*6;i++){
     char j=0;
@@ -374,6 +387,7 @@ void set_list(char p){
   }
   show[38]='\n';
   show[77]=0x00;
+
 }
 
 
@@ -554,6 +568,7 @@ void display(char go){
   else if (page==12 && go == 0xD1){
     unsigned int temp=student_size();
     char i=0x00;
+
 
 
 
@@ -743,7 +758,7 @@ void display(char go){
         menu(61);
     }
      //**********previous page***********************
-    else if( page==41 && time==100){
+    else if( page==41 && time==200){
 
 
 
@@ -756,7 +771,7 @@ void display(char go){
             time=0;
     }
        //***************Continuous display of section 4*******************
-    else if(page==4 && go != 0xD1 && time==200){
+    else if(page==4 && go != 0xD1 && time==300){
 
 
 
@@ -777,27 +792,15 @@ void display(char go){
 //          for(;i<0x08;i++) code[i]=0x00;
           go_menu();
     }
-    else {
-
-
-
-
-    }
-
-
-
-
     //****************section 5*****************
-//       else if(page==0 && go==0x05){
-//        page=5;
-//        time=0;
-//        menu(5);
-//    }
-//    else if(page==5 && go==0xD1){
-//          char i=0x00;
-//          for(;i<0x08;i++) code[i]=0x00;
-//          go_menu();
-//    }
+       else if(page==0 && go==0x05){
+        page=5;
+        time=0;
+        menu(5);
+    }
+    else if(page==5 && go==0xD1){
+          go_menu();
+    }
   time=time+1;
 
 
@@ -841,7 +844,7 @@ void main(void)
   lcd_init();
   //init key pad
   PORTA=0x07;
-  //clear_ee();
+  clear_ee();
   //show_ee();
   menu(0);
 
@@ -850,10 +853,9 @@ void main(void)
    DDRD=0xff;
 
   while(1){
-      delay_ms(10);
+      delay_ms(15);
 
        go=key();
-       PORTD=go;
       display(go);
   }
 

@@ -7,3 +7,4 @@
 #define MYUBRR ((F_CPU / 16 / BAUD) - 1)
 void USART_init(unsigned int ubrr);
 void USART_Transmit(char data);
+void USART_ClearTerminal();
