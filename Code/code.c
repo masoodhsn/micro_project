@@ -647,7 +647,7 @@ void display(char go){
     if (code_size() == 0x08){
       print("Error",cursor+2);
       PORTC.6=1;
-      delay_ms(25);
+      delay_ms(250);
       PORTC.6=0;
       return ;
     }

@@ -1,7 +1,7 @@
-VERSION:3 SOURCE_TIMESTAMP:5A25637B
-NODE:I LEVEL:0 LINE:1 "E:\MicroProcessor\micro_project\Code\distanceCheck.h"
-NODE:I LEVEL:0 LINE:2 "E:\MicroProcessor\micro_project\Code\Temperature.h"
-NODE:I LEVEL:0 LINE:3 "E:\MicroProcessor\micro_project\Code\USART.h"
+VERSION:3 SOURCE_TIMESTAMP:5A277899
+NODE:I LEVEL:0 LINE:1 "H:\IUT-5\microprogram\project\micro_project\Code\distanceCheck.h"
+NODE:I LEVEL:0 LINE:2 "H:\IUT-5\microprogram\project\micro_project\Code\Temperature.h"
+NODE:I LEVEL:0 LINE:3 "H:\IUT-5\microprogram\project\micro_project\Code\USART.h"
 NODE:I LEVEL:0 LINE:4 "C:\cvavr\inc\stdlib.h"
 NODE:I LEVEL:0 LINE:5 "C:\cvavr\inc\string.h"
 NODE:M LEVEL:0 LINE:6 "E"
